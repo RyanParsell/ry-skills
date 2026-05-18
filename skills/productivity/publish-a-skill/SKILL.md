@@ -5,7 +5,7 @@ description: Wire a newly-authored skill into plugin.json, the top-level README,
 
 # Publishing a Skill
 
-Companion to [write-a-skill](../write-a-skill/SKILL.md). That skill *creates* `SKILL.md`; this one *ships* it.
+Companion to [write-a-skill](../write-a-skill/SKILL.md). That skill *authors and improves* the skill (vendored Anthropic `skill-creator`); this one *ships* it to the repo's three sync points.
 
 ## Scope
 
