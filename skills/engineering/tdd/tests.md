@@ -4,14 +4,18 @@
 
 **Integration-style**: Test through real interfaces, not mocks of internal parts.
 
-```typescript
+```csharp
 // GOOD: Tests observable behavior
-test("user can checkout with valid cart", async () => {
-  const cart = createCart();
-  cart.add(product);
-  const result = await checkout(cart, paymentMethod);
-  expect(result.status).toBe("confirmed");
-});
+[Fact]
+public async Task User_Can_Checkout_With_Valid_Cart()
+{
+    var cart = CartFactory.Create();
+    cart.Add(product);
+
+    var result = await checkout.Process(cart, paymentMethod);
+
+    Assert.Equal(CheckoutStatus.Confirmed, result.Status);
+}
 ```
 
 Characteristics:
@@ -26,13 +30,18 @@ Characteristics:
 
 **Implementation-detail tests**: Coupled to internal structure.
 
-```typescript
+```csharp
 // BAD: Tests implementation details
-test("checkout calls paymentService.process", async () => {
-  const mockPayment = jest.mock(paymentService);
-  await checkout(cart, payment);
-  expect(mockPayment.process).toHaveBeenCalledWith(cart.total);
-});
+[Fact]
+public async Task Checkout_Calls_PaymentService_Process()
+{
+    var mockPayment = new Mock<IPaymentService>();
+    var sut = new Checkout(mockPayment.Object);
+
+    await sut.Process(cart, payment);
+
+    mockPayment.Verify(p => p.Process(cart.Total), Times.Once);
+}
 ```
 
 Red flags:
@@ -44,18 +53,28 @@ Red flags:
 - Test name describes HOW not WHAT
 - Verifying through external means instead of interface
 
-```typescript
+```csharp
 // BAD: Bypasses interface to verify
-test("createUser saves to database", async () => {
-  await createUser({ name: "Alice" });
-  const row = await db.query("SELECT * FROM users WHERE name = ?", ["Alice"]);
-  expect(row).toBeDefined();
-});
+[Fact]
+public async Task CreateUser_Saves_To_Database()
+{
+    await users.Create(new UserData { Name = "Alice" });
+
+    var row = await db.QuerySingleAsync<UserRow>(
+        "SELECT * FROM users WHERE name = @name",
+        new { name = "Alice" });
+
+    Assert.NotNull(row);
+}
 
 // GOOD: Verifies through interface
-test("createUser makes user retrievable", async () => {
-  const user = await createUser({ name: "Alice" });
-  const retrieved = await getUser(user.id);
-  expect(retrieved.name).toBe("Alice");
-});
+[Fact]
+public async Task CreateUser_Makes_User_Retrievable()
+{
+    var user = await users.Create(new UserData { Name = "Alice" });
+
+    var retrieved = await users.Get(user.Id);
+
+    Assert.Equal("Alice", retrieved.Name);
+}
 ```

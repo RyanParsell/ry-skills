@@ -3,7 +3,7 @@
 Mock at **system boundaries** only:
 
 - External APIs (payment, email, etc.)
-- Databases (sometimes - prefer test DB)
+- Databases (sometimes - prefer a real test DB)
 - Time/randomness
 - File system (sometimes)
 
@@ -19,40 +19,43 @@ At system boundaries, design interfaces that are easy to mock:
 
 **1. Use dependency injection**
 
-Pass external dependencies in rather than creating them internally:
+Pass external dependencies in rather than constructing them internally:
 
-```typescript
+```csharp
 // Easy to mock
-function processPayment(order, paymentClient) {
-  return paymentClient.charge(order.total);
-}
+public Task<ChargeResult> ProcessPayment(Order order, IPaymentClient paymentClient)
+    => paymentClient.Charge(order.Total);
 
 // Hard to mock
-function processPayment(order) {
-  const client = new StripeClient(process.env.STRIPE_KEY);
-  return client.charge(order.total);
+public Task<ChargeResult> ProcessPayment(Order order)
+{
+    var client = new StripeClient(Environment.GetEnvironmentVariable("STRIPE_KEY"));
+    return client.Charge(order.Total);
 }
 ```
 
-**2. Prefer SDK-style interfaces over generic fetchers**
+**2. Prefer SDK-style interfaces over generic clients**
 
-Create specific functions for each external operation instead of one generic function with conditional logic:
+Create a specific method for each external operation instead of one generic method with conditional logic:
 
-```typescript
-// GOOD: Each function is independently mockable
-const api = {
-  getUser: (id) => fetch(`/users/${id}`),
-  getOrders: (userId) => fetch(`/users/${userId}/orders`),
-  createOrder: (data) => fetch('/orders', { method: 'POST', body: data }),
-};
+```csharp
+// GOOD: Each method is independently mockable
+public interface IOrderApi
+{
+    Task<User> GetUser(Guid id);
+    Task<IReadOnlyList<Order>> GetOrders(Guid userId);
+    Task<Order> CreateOrder(OrderRequest data);
+}
 
 // BAD: Mocking requires conditional logic inside the mock
-const api = {
-  fetch: (endpoint, options) => fetch(endpoint, options),
-};
+public interface IHttpApi
+{
+    Task<HttpResponseMessage> Send(string endpoint, HttpRequestOptions options);
+}
 ```
 
-The SDK approach means:
+The SDK-style approach means:
+
 - Each mock returns one specific shape
 - No conditional logic in test setup
 - Easier to see which endpoints a test exercises
